@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "VmName": {},
+    "ExistingVirtualNetworkName": {},
+    "ExistingSubnetNameInVirtualNetworkName": {},
+    "OSVersion": {},
+    "OSDiskSize": {},
+    "osDiskStorageAccountType": {},
+    "DataDiskSize": {},
+    "DataDiskStorageAccountType": {},
+    "DataDiskNumber": {},
+    "vmSize": {},
+    "availabilitySet": {},
+    "availabilitySetName": {},
+    "availabilityZoneParameter": {},
+    "ES_OP_Schedule": {},
+    "ES_OP_Weekdays": {},
+    "ES_OP_Weekends": {},
+    "ES_Monitoring": {},
+    "Now_ApplicationService": {},
+    "Now_Environment": {},
+    "Now_ManagedByGroup": {},
+    "Now_SupportGroup": {},
+    "userPassword": {
+      "reference": {
+          "keyvault": {
+            "id": "/keyvault1ID"
+          },
+          "secretName": "userPassword"
+        }
+      },
+      "userName": {
+      "reference": {
+          "keyvault": {
+            "id": "/keyvault1ID"
+          },
+          "secretName": "userName"
+        }
+      }
+    },
+  "variables": {  },
+  "functions": [  ],
+  "resources": [  ],
+  "outputs": {  }
+}
