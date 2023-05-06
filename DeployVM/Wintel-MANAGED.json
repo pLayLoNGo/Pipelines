@@ -1,0 +1,356 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VmName": {
+            "defaultValue": "EXAMPLEVMNAME",
+            "type": "String",
+            "maxLength": 15,
+            "metadata": {
+                "description": "Virtual machine name for VM"
+            }
+        },
+        "ExistingVirtualNetworkName": {
+            "defaultValue": "VNET1
+            "allowedValues": [
+                "VNET1",
+                "VNET2"
+            ],
+            "metadata": {
+                "description": "Existing virtual network"
+            }
+        },
+        "ExistingSubnetNameInVirtualNetworkName": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "Existing subnet name in virtual network"
+            }
+        },
+        
+        "OSVersion": {
+            "type": "string",
+            "defaultValue": "2022-Datacenter",
+            "allowedValues": [
+                "2016-Datacenter",
+                "2019-Datacenter",
+                "2022-Datacenter"
+            ],
+            "metadata": {
+                "description": "The Windows version for the VM."
+            }
+        },
+        "OSDiskSize": {
+            "type": "string",
+            "defaultValue": "127",
+            "metadata": {
+                "description": "Specifies the size for OS disk."
+            }
+        },
+        "osDiskStorageAccountType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Premium_LRS",
+                "StandardSSD_LRS",
+                "Standard_LRS"
+            ],
+            "metadata": {
+                "description": "Specifies the storage account type for OS and data disk."
+            }
+        },
+        "DataDiskSize": {
+            "type": "string",
+            "defaultValue": "127",
+            "metadata": {
+                "description": "Specifies the size for data disk."
+            }
+        },
+        "DataDiskStorageAccountType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Premium_LRS",
+                "StandardSSD_LRS",
+                "Standard_LRS"
+            ],
+            "metadata": {
+                "description": "Specifies the storage account type for OS and data disk."
+            }
+        },
+        "DataDiskNumber": {
+            "type": "int",
+            "defaultValue": "1",
+            "allowedValues": [
+                1,
+                2,
+                3
+            ],
+            "metadata": {
+                "description": "Specifies the number of data disk"
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "defaultValue": "Standard_B2ms",
+            "allowedValues": [
+                "Standard_B2ms",
+                "Standard_B4ms",
+                "Standard_D2ds_v5",
+                "Standard_D4ds_v5"
+            ],
+            "metadata": {
+                "description": "Virtual machine size."
+            }
+        },
+        "availabilitySet": {
+            "type": "bool",
+            "defaultValue": false,
+            "allowedValues": [
+                true,
+                false
+            ],
+            "metadata": {
+                "description": "Should the VM be deployed in a Availability Set?"
+            }
+        },
+        "availabilitySetName": {
+            "defaultValue": "",
+            "type": "string",
+            "metadata": {
+                "description": "Availability Set Name"
+            }
+        },
+        "availabilityZoneParameter": {
+            "type": "array",
+            "defaultvalue": [
+                "1"
+            ],
+            "metadata": {
+                "description": "Availability zone numbers"
+            }
+        },
+        "ES_OP_Schedule": {
+            "defaultValue": "Yes",
+            "type": "String",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Schedule shutdown"
+            }
+        },
+        "ES_OP_Weekdays": {
+            "defaultValue": "07:00-19:00",
+            "type": "String",
+            "allowedValues": [
+                "00:00-23:59",
+                "07:00-19:00",
+                "07:00-20:00",
+                "07:00-21:00",
+                "07:00-22:00",
+                "22:30-23:59"
+            ],
+            "metadata": {
+                "description": "Daily Schedule"
+            }
+        },
+        "ES_OP_Weekends": {
+            "defaultValue": "Off",
+            "type": "String",
+            "allowedValues": [
+                "0:00-23:59",
+                "00:00-00:00",
+                "07:00-17:00",
+                "07:30-21:00",
+                "22:30-01:00",
+                "Off"
+            ],
+            "metadata": {
+                "description": "Weekends Schedule"
+            }
+        },
+        "ES_Monitoring": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "Domain Name"
+            }
+        },
+        "Now_ApplicationService": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "Application Name"
+            }
+        },
+        "Now_Environment": {
+            "defaultValue": "Test",
+            "type": "String",
+            "allowedValues": [
+                "Development",
+                "Test",
+                "Acceptance",
+                "Production"
+            ],
+            "metadata": {
+                "description": "Environment"
+            }
+        },
+        "Now_ManagedByGroup": {
+            "defaultValue": "ES NN Windows",
+            "type": "String",
+            "metadata": {
+                "description": "Group Name"
+            }
+        },
+        "Now_SupportGroup": {
+            "defaultValue": "ES 3rd Windows",
+            "type": "String",
+            "metadata": {
+                "description": "Group Name"
+            }
+        },
+        "userPassword": {
+            "type": "securestring"
+        },
+        "userName": {
+            "type": "securestring"
+        }
+    },
+    "variables": {
+        "subnetRef": "[resourceId(variables('VirtualNetworkResourceGroupName'),'Microsoft.Network/virtualNetworks/subnets', parameters('ExistingVirtualNetworkName'), parameters('ExistingSubnetNameInVirtualNetworkName'))]",
+        "vm_networkinterface": "[concat(toLower(parameters('VmName')), '-networkinterface')]",
+        "VirtualNetworkResourceGroupName": "AzureVnet",
+        "Now_Location": "Spain",
+        "pubNameWS": "MicrosoftWindowsServer",
+        "offerNameWS": "WindowsServer",
+        "VariableAvailability": {
+            "On": {
+                "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+            },
+            "Off": "[json('null')]"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-05-01",
+            "name": "[variables('vm_networkinterface')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "dnsSettings": {
+                    "dnsServers": []
+                },
+                "enableAcceleratedNetworking": false,
+                "enableIPForwarding": false
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2022-03-01",
+            "name": "[parameters('VmName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "ES_Dynatrace": "NO",
+                "DYN_HostGroup": "NO",
+                "Tenableio": "migrate",
+                "ES_Monitoring": "[parameters('ES_Monitoring')]",
+                "ES_OP-Schedule": "[parameters('ES_OP_Schedule')]",
+                "ES_OP-Weekdays": "[parameters('ES_OP_Weekdays')]",
+                "ES_OP-Weekends": "[parameters('ES_OP_Weekends')]",
+                "Now_ApplicationService": "[parameters('Now_ApplicationService')]",
+                "Now_Environment": "[parameters('Now_Environment')]",
+                "Now_Location": "[variables('Now_Location')]",
+                "Now_ManagedByGroup": "[parameters('Now_ManagedByGroup')]",
+                "Now_SupportGroup": "[parameters('Now_SupportGroup')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('vm_networkinterface'))]"
+            ],
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "zones": "[if(equals(parameters('availabilitySet'),bool('true')),json('null'),parameters('availabilityZoneParameter'))]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('pubNameWS')]",
+                        "offer": "[variables('offerNameWS')]",
+                        "sku": "[parameters('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "[concat(parameters('VmName'), '_OsDisk')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskStorageAccountType')]"
+                        },
+                        "diskSizeGB": "[parameters('OSDiskSize')]"
+                    },
+                    "copy": [
+                        {
+                            "name": "dataDisks",
+                            "count": "[parameters('DataDiskNumber')]",
+                            "input": {
+                                "lun": "[copyIndex('dataDisks')]",
+                                "name": "[concat(parameters('VmName'),'_DataDisk',copyIndex('dataDisks'))]",
+                                "diskSizeGB": "[parameters('DataDiskSize')]",
+                                "createOption": "Empty",
+                                "managedDisk": {
+                                    "storageAccountType": "[parameters('DataDiskStorageAccountType')]"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('VmName')]",
+                    "adminUsername": "[parameters('userName')]",
+                    "adminPassword": "[parameters('userPassword')]",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vm_networkinterface'))]"
+                        }
+                    ]
+                },
+                "availabilitySet": "[if(equals(parameters('availabilitySet'),bool('true')),variables('VariableAvailability').On,variables('VariableAvailability').Off)]"
+            }
+        }
+        
+    ],
+    "outputs": {}
+}
