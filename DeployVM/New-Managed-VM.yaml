@@ -1,0 +1,345 @@
+
+trigger: none
+
+parameters:
+
+  - name: SubscriptionName
+    displayName: 'Subscription'
+    type: string
+    values:
+      - SuscriptionName1
+      - SuscriptionName2
+
+  - name: virtualMachineName
+    displayName: "Name of the virtual machine"
+    type: string
+    default: 'None'
+
+  - name: targetResourceGroupName
+    displayName: "Resource Group of the virtual machine"
+    type: string
+    default: 'None'
+
+  - name: vnet
+    displayName: "VNET of the virtual machine"
+    type: string
+    values:
+      - VNET1
+      - VNET2
+
+  - name: subnet
+    displayName: "Existing subnet name in virtual network"
+    type: string
+    default: 'None'
+
+  - name: OSversion
+    displayName: "Windows version"
+    type: string
+    values:
+      - 2019-Datacenter
+      - 2022-Datacenter
+
+  - name: OSDiskSize
+    displayName: 'OS disk size'
+    type: string
+    default: '127'
+
+  - name: osDiskStorageAccountType
+    displayName: 'Type of storage for the OS disk'
+    type: string
+    default: 'Standard_LRS'
+    values:
+      - Premium_LRS
+      - StandardSSD_LRS
+      - Standard_LRS
+
+  - name: DataDiskSize
+    displayName: "Data disk size"
+    type: string
+    default: '127'
+
+  - name: DataDiskStorageAccountType
+    displayName: 'Type of storage for the data disks'
+    type: string
+    default: 'Standard_LRS'
+    values:
+      - Premium_LRS
+      - StandardSSD_LRS
+      - Standard_LRS
+
+  - name: DataDiskNumber
+    displayName: "Number of data disks"
+    default: '1'
+    type: string
+    values:
+      - 1
+      - 2
+      - 3
+
+  - name: vmSize
+    displayName: "Virtual machine size"
+    type: string
+    default: 'Standard_B2ms'
+    values:
+      - Standard_B2ms
+      - Standard_B4ms
+      - Standard_D2ds_v5
+      - Standard_D4ds_v5
+
+  - name: availabilitySet
+    displayName: "Availability Set?"
+    type: string
+    default: 'false'
+    values:
+      - 'true'
+      - 'false'    
+
+  - name: availabilitySetName
+    displayName: "Availability Set name"
+    type: string
+    default: 'None'
+  
+  - name: zone
+    displayName: "Availability zone"
+    type: string
+    default: '1'
+    values:
+      - 1
+      - 2
+      - 3 
+
+  - name: BackupPolicyName
+    displayName: "Backup Policy"
+    type: string
+    default: 'BackupPolicy1'
+    values:
+      - BackupPolicy1
+      - BackupPolicy2
+      - BackupPolicy3
+
+  - name: ES_OP_Schedule
+    displayName: 'ES_OP_Schedule'
+    type: string
+    default: 'Yes'
+    values:
+      - 'Yes'
+      - 'No'
+      
+  - name: ES_OP_Weekdays
+    displayName: 'ES_OP_Weekdays'
+    type: string
+    default: '07:00-19:00'
+    values:
+      - '00:00-00:00'
+      - '00:00-23:59'
+      - '07:00-19:00'
+      - '07:00-20:00'
+      - '07:00-21:00'
+      - '07:30-17:00'
+      - '22:30-23:59'
+
+  - name: ES_OP_Weekends
+    displayName: 'ES_OP_Weekends'
+    type: string
+    default: 'Off'
+    values:
+      - '00:00-00:00'
+      - '00:00-23:59'
+      - '07:00-17:00'
+      - '22:30-01:00'
+      - 'Off'
+
+  - name: ES_Monitoring
+    displayName: "ES_Monitoring"
+    type: string
+    default: 'None'
+
+  - name: Now_Environment
+    displayName: "Now_Environment"
+    type: string
+    default: 'Test'
+    values:
+      - Development
+      - Test
+      - Acceptance
+      - Production
+
+  - name: Now_ApplicationService
+    displayName: "Now_ApplicationService"
+    type: string
+    default: 'None'
+
+  - name: Now_ManagedByGroup
+    displayName: 'Now_ManagedByGroup'
+    type: string
+    default: 'ES NN Windows'
+
+  - name: Now_SupportGroup
+    displayName: 'Now_SupportGroup'
+    type: string
+    default: 'ES 3rd Windows'
+    
+
+variables:
+- name: SubscriptionId
+  ${{ if eq( parameters['SubscriptionName'], 'SuscriptionName1') }}:
+    value: 'SuscriptionName1-ID'
+  ${{ if eq( parameters['SubscriptionName'], 'SuscriptionName2') }}:
+    value: 'SuscriptionName2-ID'
+- name: VaultName
+  ${{ if eq( parameters['SubscriptionName'], 'SuscriptionName1') }}:
+    value: 'keyvault1'
+  ${{ if eq( parameters['SubscriptionName'], 'SuscriptionName2') }}:
+    value: 'keyvault2'
+- name: Add
+  value: 'Add'
+- name: Remove
+  value: 'Remove'
+
+
+stages:
+- stage: DeployVm
+  displayName: Deploy VM
+  pool:
+    vmImage: windows-latest
+  jobs:
+    - job: 'arm_template'
+      displayName: 'ARM Template'
+      steps:
+        - task: CopyFiles@2
+          displayName: 'Copy_Arm_Template'
+          inputs:
+            SourceFolder: 'Nueva-VM-Manejada'
+            Contents: '*.json*'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish_Artifact'
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'virtualmachines'
+            publishLocation: 'Container'
+            
+        - task: AzureResourceManagerTemplateDeployment@3
+          displayName: 'Deploy_Template'
+          inputs:
+            deploymentScope: 'Resource Group'
+            azureResourceManagerConnection: 'Infra-Sistemas'
+            subscriptionId: "${{ variables.SubscriptionId }}"
+            action: 'Create Or Update Resource Group'
+            resourceGroupName: "${{ parameters.targetResourceGroupName }}"
+            location: 'West Europe'
+            templateLocation: 'Linked artifact'
+            csmFile: '$(Build.ArtifactStagingDirectory)/WINTEL-MANAGED.json'
+            csmParametersFile: '$(Build.ArtifactStagingDirectory)/WINTEL-Parameters.json'
+            overrideParameters: '-VmName "${{ parameters.virtualMachineName }}" -ExistingVirtualNetworkName "${{ parameters.vnet }}" -ExistingSubnetNameInVirtualNetworkName "${{ parameters.subnet }}" -OSversion "${{ parameters.OSversion }}" -OSDiskSize "${{ parameters.OSDiskSize }}" -osDiskStorageAccountType "${{ parameters.osDiskStorageAccountType }}" -DataDiskSize "${{ parameters.DataDiskSize }}" -DataDiskStorageAccountType "${{ parameters.DataDiskStorageAccountType }}" -DataDiskNumber "${{ parameters.DataDiskNumber }}" -vmSize "${{ parameters.vmSize }}" -availabilitySet "${{ parameters.availabilitySet }}" -availabilitySetName "${{ parameters.availabilitySetName }}" -ES_OP_Schedule "${{ parameters.ES_OP_Schedule }}" -ES_OP_Weekdays "${{ parameters.ES_OP_Weekdays }}" -ES_OP_Weekends "${{ parameters.ES_OP_Weekends }}" -ES_Monitoring "${{ parameters.ES_Monitoring }}" -Now_Environment "${{ parameters.Now_Environment }}" -Now_ApplicationService "${{ parameters.Now_ApplicationService }}" -Now_ManagedByGroup "${{ parameters.Now_ManagedByGroup }}" -Now_SupportGroup "${{ parameters.Now_SupportGroup }}"'
+            deploymentMode: 'Incremental'
+
+- stage: AddExtensionsBK
+  displayName: Add Extensions and Backup
+  pool:
+    vmImage: windows-latest
+  jobs:
+    - job: 'JobAddExtensions'
+      displayName: 'Adding extensions'
+      steps:
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-Extension.ps1'
+            ScriptArguments: '-virtualMachineName ${{ parameters.virtualMachineName }} -SubscriptionName ${{ parameters.SubscriptionName }}'
+            azurePowerShellVersion: LatestVersion
+    - job: 'JobAddBackup'
+      displayName: 'Enabling backup for VM'
+      steps:
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-BK.ps1'
+            ScriptArguments: '-virtualMachineName ${{ parameters.virtualMachineName }} -SubscriptionName ${{ parameters.SubscriptionName }} -BackupPolicyName ${{ parameters.BackupPolicyName }}'
+            azurePowerShellVersion: LatestVersion
+
+- stage: AddDCR
+  displayName: Add Data Collection Rules
+  dependsOn:
+    - AddExtensionsBK
+  pool:
+    vmImage: windows-latest
+  jobs:
+    - job: 'AddVMDCR'
+      displayName: 'Adding VM to DCR'
+      steps:
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-DCR.ps1'
+            ScriptArguments: '-virtualMachineName ${{ parameters.virtualMachineName }} -SubscriptionName ${{ parameters.SubscriptionName }}'
+            azurePowerShellVersion: LatestVersion
+
+- stage: AddMonitoring
+  displayName: Add Monitoring Alert
+  dependsOn:
+    - AddExtensionsBK
+    - AddDCR   
+  condition: succeeded()
+  pool:
+    vmImage: windows-latest
+  jobs:
+    - job: 'AddVMMonitoring'
+      displayName: 'Adding VM Heartbeat Alert'
+      steps:
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-Monitoring.ps1'
+            ScriptArguments: '-virtualMachineName ${{ parameters.virtualMachineName }} -SubscriptionName ${{ parameters.SubscriptionName }}'
+            azurePowerShellVersion: LatestVersion
+
+        
+- stage: Encryption
+  displayName: Initialize data disks and encrypt the VM
+  dependsOn:
+    - AddMonitoring
+  condition: succeeded()
+  pool:
+    vmImage: windows-latest
+  jobs:
+    - job: 'InitializeDisk'
+      displayName: 'Initialising disks'
+      steps:
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-InitDisks.ps1'
+            ScriptArguments: '-virtualMachineName ${{ parameters.virtualMachineName }} -SubscriptionName ${{ parameters.SubscriptionName }} -targetResourceGroupName ${{ parameters.targetResourceGroupName }}'
+            azurePowerShellVersion: LatestVersion
+    - job: 'EncryptVM'
+      displayName: 'Encrypting VM'
+      dependsOn: InitializeDisk
+      steps:
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-NetworkRule.ps1'
+            ScriptArguments: '-SubscriptionID ${{ variables.SubscriptionId }} -Action ${{ variables.Add }} -VaultName ${{ variables.VaultName }}'
+            azurePowerShellVersion: LatestVersion
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-Encryption.ps1'
+            ScriptArguments: '-virtualMachineName ${{ parameters.virtualMachineName }} -SubscriptionName ${{ parameters.SubscriptionName }} -targetResourceGroupName ${{ parameters.targetResourceGroupName }}'
+            azurePowerShellVersion: LatestVersion
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: 'Infra-Sistemas'
+            ScriptType: 'FilePath'
+            ScriptPath: 'New-Managed-VM-NetworkRule.ps1'
+            ScriptArguments: '-SubscriptionID ${{ variables.SubscriptionId }} -Action ${{ variables.Remove}} -VaultName ${{ variables.VaultName }}'
+            azurePowerShellVersion: LatestVersion
